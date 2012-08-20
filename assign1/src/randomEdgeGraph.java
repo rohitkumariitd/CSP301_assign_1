@@ -1,23 +1,37 @@
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
+
 import prefuse.data.Graph;
 import prefuse.data.Node;
 import prefuse.data.io.AbstractGraphReader;
 import prefuse.data.io.DataIOException;
 
+/*
+public class randomEdgeGraph extends AbstractGraphReader {
 
-public class gmlReader extends AbstractGraphReader {
-
-	public gmlReader() {
+	public randomEdgeGraph() {
 		// TODO Auto-generated constructor stub
 	}
 
 	@Override
 	public Graph readGraph(InputStream arg0) throws DataIOException {
 		// TODO Auto-generated method stub
+		return null;
+	}
+
+}
+*/
+
+
+public class randomEdgeGraph extends AbstractGraphReader {
+
+	@Override
+	public Graph readGraph(InputStream arg0) throws DataIOException {
+		// TODO Auto-generated method stub
 		Graph graph=null; //////// initialized according to the value of directed 
 		Node node=null;
-		int i,source=0,target=0, countsame =0, countedges=0;
+		int i,source=0,target=0, numnodes=0;
 		int id=1;
 		byte[] b=new  byte[15];
 		int intread=0;
@@ -92,6 +106,7 @@ public class gmlReader extends AbstractGraphReader {
 									id=id*10+intread-48;
 								}
 								node.setInt("id",id);
+								numnodes++;
 								System.out.println("idd " + id);
 								while((intread=arg0.read())==32){}
 							}
@@ -158,67 +173,6 @@ public class gmlReader extends AbstractGraphReader {
 							}
 						}
 				}
-				else if(intread==101)						// edge 
-				{
-					intread=gotoNextline(arg0);
-					while(true)
-					{
-						if(intread==91)							// 91 = "[" go to next line
-						{
-							intread=gotoNextline(arg0);
-						}
-						else if(intread==115)					//115 source
-						{
-							arg0.skip(6);
-							source=0;
-							target=0;
-							while((intread=arg0.read())!=10)
-							{
-								source=source*10+intread-48;
-							}
-							System.out.println("source=" +source);
-							while((intread=arg0.read())==32){}
-							arg0.skip(6);
-							while((intread=arg0.read())!=10)
-							{
-								target=target*10+intread-48;
-							}
-							
-							
-							if(graph.getNodeCount()==id)
-							{
-								graph.addEdge((source-1), (target-1));
-								countedges++;	//// count the total number of edges
-								
-								if(graph.getNode(source-1).get("value")==graph.getNode(target-1).get("value"))
-								{countsame++;}		////// count the no. of edges between the nodes with same value
-																
-							}
-							else
-							{
-								graph.addEdge(source, target);
-								countedges++;
-								
-								if(graph.getNode(source).get("value")==graph.getNode(target).get("value"))
-								{countsame++;}		////// count the no. of edges between the nodes with same value
-								
-							}
-							while((intread=arg0.read())==32){}
-							System.out.println("s= " +source +" t= " +target);
-							//break;
-						}
-						else if(intread==93)							// 91 = "]" go to next line
-						{
-							intread=gotoNextline(arg0);
-						}
-						else
-						{
-							break;
-						}
-					}
-					
-					float ratio = countsame/countedges;
-				}
 				else
 				{
 					System.out.println("There is some problem in file");
@@ -234,69 +188,13 @@ public class gmlReader extends AbstractGraphReader {
 			e.printStackTrace();
 		}
 		
-		/*
-		Node node=null;
-		int numNodes = 20;
-		 Class type;
-		graph.addColumn("name",String.class);
-		graph.addColumn("value",String.class);
-		for (int i = 0; i < numNodes; i++)
-			{
-				node=graph.addNode();
-				//System.out.println(node.canSetString("name") +" " + node.getColumnCount() +" "+ node.isValid());
-				node.setString("name", "abcd");
-				//node.set(1,"l");
-			}
-		    	
-		// Create random connections
 		Random rand = new Random();	
-		for(int i = 0; i < numNodes; i++)
+		for(int i1 = 0; i1 < numnodes; i1++)
 		{
-		  int first = rand.nextInt(numNodes);
-		  int second = rand.nextInt(numNodes);
+		  int first = rand.nextInt(numnodes);
+		  int second = rand.nextInt(numnodes-1);
 		  graph.addEdge(first, second);
 		}
-	*/
-		/*int[] palette = {ColorLib.rgb(200, 0, 0), ColorLib.rgb(0,0, 200),ColorLib.rgb(0,200, 0)}; 
-		DataColorAction fill = new DataColorAction("graph.nodes", "value",Constants.NOMINAL,VisualItem.FILLCOLOR,palette);
-		ColorAction edges = new ColorAction("graph.edges", VisualItem.STROKECOLOR, ColorLib.gray(200));
-		       
-		ActionList color = new ActionList();
-		color.add(fill);
-		color.add(edges);
-		       
-		ActionList layout = new ActionList();   	
-		layout.add(new RandomLayout("graph"));   	
-		layout.add(new RepaintAction()); 
-		
-		Visualization vis = new Visualization();
-		vis.add("graph", graph);
-		// once actions have been created (see above)
-		// they are added to the Visualization.
-		vis.putAction("color", color);
-		vis.putAction("layout", layout);
-		
-		ShapeRenderer r = new ShapeRenderer();
-		vis.setRendererFactory(new DefaultRendererFactory(r));
-		
-		Display d = new Display(vis);
-		d.setSize(720, 500); 
-		
-		d.addControlListener(new DragControl());
-		d.addControlListener(new PanControl());
-		d.addControlListener(new ZoomControl());
-		d.addControlListener(new mycontrol());
-		           	
-		JFrame frame = new JFrame("prefuse example");   	
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		    	
-		frame.add(d);    	
-		frame.pack();              	
-		frame.setVisible(true);
-		    	
-		vis.run("color");
-		vis.run("layout");
-		*/
 		return graph;
 	}
 
@@ -311,7 +209,6 @@ public class gmlReader extends AbstractGraphReader {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		return intread;
-		
+		return intread;	
 	}
-}
+	}

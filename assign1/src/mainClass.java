@@ -48,13 +48,13 @@ public class mainClass {
 		Graph graph = new Graph();
 		try {
 			
-			graph = reader.readGraph("polbooks.gml");
+			graph = reader.readGraph("polblogs.gml");
 		} catch (DataIOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-	
+
 		int[] palette = {ColorLib.rgb(200, 0, 0), ColorLib.rgb(0,0, 200),ColorLib.rgb(0,200, 0)}; 
 		DataColorAction fill = new DataColorAction("graph.nodes", "value",Constants.NOMINAL,VisualItem.FILLCOLOR,palette);
 		ColorAction edges = new ColorAction("graph.edges", VisualItem.STROKECOLOR, ColorLib.gray(200));
@@ -85,7 +85,7 @@ public class mainClass {
 		d.addControlListener(new ZoomControl());
 		d.addControlListener(new mycontrol());
 		           	
-		JFrame frame = new JFrame("prefuse example");   	
+		JFrame frame = new JFrame("book details");   	
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		    	
 		frame.add(d);    	
