@@ -7,23 +7,6 @@ import prefuse.data.Node;
 import prefuse.data.io.AbstractGraphReader;
 import prefuse.data.io.DataIOException;
 
-/*
-public class randomEdgeGraph extends AbstractGraphReader {
-
-	public randomEdgeGraph() {
-		// TODO Auto-generated constructor stub
-	}
-
-	@Override
-	public Graph readGraph(InputStream arg0) throws DataIOException {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-}
-*/
-
-
 public class randomEdgeGraph extends AbstractGraphReader {
 
 	@Override
@@ -31,7 +14,7 @@ public class randomEdgeGraph extends AbstractGraphReader {
 		// TODO Auto-generated method stub
 		Graph graph=null; //////// initialized according to the value of directed 
 		Node node=null;
-		int i,source=0,target=0, numnodes=0;
+		int i, numnodes=0, countsame =0, countedges=0;
 		int id=1;
 		byte[] b=new  byte[15];
 		int intread=0;
@@ -191,9 +174,18 @@ public class randomEdgeGraph extends AbstractGraphReader {
 		Random rand = new Random();	
 		for(int i1 = 0; i1 < numnodes; i1++)
 		{
+		  int second; 
 		  int first = rand.nextInt(numnodes);
-		  int second = rand.nextInt(numnodes-1);
-		  graph.addEdge(first, second);
+		  second = rand.nextInt(numnodes);
+		  if(second == first)
+			  second = rand.nextInt(numnodes);
+		  
+		 	graph.addEdge(first, second);
+			countedges++;
+				
+			if(graph.getNode(first).get("value")==graph.getNode(second).get("value"))
+			{countsame++;}		////// count the no. of edges between the nodes with same value
+						  
 		}
 		return graph;
 	}

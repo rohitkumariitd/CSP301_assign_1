@@ -1,9 +1,33 @@
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Writer;
+import java.util.Random;
+
+import javax.swing.JFrame;
+
+import prefuse.Constants;
+import prefuse.Display;
+import prefuse.Visualization;
+import prefuse.action.ActionList;
+import prefuse.action.RepaintAction;
+import prefuse.action.assignment.ColorAction;
+import prefuse.action.assignment.DataColorAction;
+import prefuse.action.layout.RandomLayout;
+import prefuse.controls.DragControl;
+import prefuse.controls.FocusControl;
+import prefuse.controls.PanControl;
+import prefuse.controls.ZoomControl;
 import prefuse.data.Graph;
 import prefuse.data.Node;
 import prefuse.data.io.AbstractGraphReader;
 import prefuse.data.io.DataIOException;
+import prefuse.render.DefaultRendererFactory;
+import prefuse.render.ShapeRenderer;
+import prefuse.util.ColorLib;
+import prefuse.visual.VisualItem;
 
 
 public class gmlReader extends AbstractGraphReader {
@@ -14,15 +38,18 @@ public class gmlReader extends AbstractGraphReader {
 
 	@Override
 	public Graph readGraph(InputStream arg0) throws DataIOException {
+		
 		// TODO Auto-generated method stub
 		Graph graph=null; //////// initialized according to the value of directed 
 		Node node=null;
-		int i,source=0,target=0, countsame =0, countedges=0;
+		int i,source=0,target=0,countsame =0, countedges=0;
 		int id=1;
 		byte[] b=new  byte[15];
 		int intread=0;
 		String s;
-	
+		float ratio;
+		int edge_nl=0,edge_lc=0,edge_nc=0;
+		int edge_0=0,edge_1=0;
 		try {
 			intread=gotoNextline(arg0);
 			if(intread!=103)
@@ -45,7 +72,7 @@ public class gmlReader extends AbstractGraphReader {
 					arg0.skip(8);
 					intread=arg0.read();
 					if(intread==48)
-					{
+					{System.out.println("undirested graph");
 						graph=new Graph(); 						///////undirected  graph
 						graph.addColumn("id",int.class);
 						graph.addColumn("name",String.class);
@@ -87,9 +114,12 @@ public class gmlReader extends AbstractGraphReader {
 							{
 								arg0.skip(2);
 								id=0;
-								while((intread=arg0.read())!=10)
+								intread=arg0.read();
+								while((intread!=10) && (intread!=13))
 								{
 									id=id*10+intread-48;
+									intread=arg0.read();
+									if(intread==13) intread=arg0.read();
 								}
 								node.setInt("id",id);
 								System.out.println("idd " + id);
@@ -172,36 +202,52 @@ public class gmlReader extends AbstractGraphReader {
 							arg0.skip(6);
 							source=0;
 							target=0;
-							while((intread=arg0.read())!=10)
+							intread=arg0.read();
+							while(intread!=10)
 							{
 								source=source*10+intread-48;
+								intread=arg0.read();
+								if(intread==13) intread=arg0.read();
 							}
 							System.out.println("source=" +source);
 							while((intread=arg0.read())==32){}
 							arg0.skip(6);
-							while((intread=arg0.read())!=10)
+							intread=arg0.read();
+							while(intread!=10)
 							{
 								target=target*10+intread-48;
+								intread=arg0.read();
+								if(intread==13) intread=arg0.read();
 							}
-							
-							
 							if(graph.getNodeCount()==id)
 							{
 								graph.addEdge((source-1), (target-1));
 								countedges++;	//// count the total number of edges
 								
-								if(graph.getNode(source-1).get("value")==graph.getNode(target-1).get("value"))
+								if(graph.getNode(source-1).get("value").equals(graph.getNode(target-1).get("value")))
 								{countsame++;}		////// count the no. of edges between the nodes with same value
-																
 							}
 							else
 							{
 								graph.addEdge(source, target);
-								countedges++;
-								
-								if(graph.getNode(source).get("value")==graph.getNode(target).get("value"))
+								countedges++;	//// count the total number of edges
+								if(graph.getNode(source).get("value").equals("n"))
+								{
+									if(graph.getNode(target).get("value").equals("l")) edge_nl++;
+									if(graph.getNode(target).get("value").equals("c")) edge_nc++;
+								}
+								if(graph.getNode(source).get("value").equals("l"))
+								{
+									if(graph.getNode(target).get("value").equals("n")) edge_nl++;
+									if(graph.getNode(target).get("value").equals("c")) edge_lc++;
+								}
+								if(graph.getNode(source-1).get("value").equals("c"))
+								{
+									if(graph.getNode(target).get("value").equals("l")) edge_lc++;
+									if(graph.getNode(target).get("value").equals("n")) edge_nc++;
+								}
+								if(graph.getNode(source).get("value").equals(graph.getNode(target).get("value")))
 								{countsame++;}		////// count the no. of edges between the nodes with same value
-								
 							}
 							while((intread=arg0.read())==32){}
 							System.out.println("s= " +source +" t= " +target);
@@ -216,8 +262,6 @@ public class gmlReader extends AbstractGraphReader {
 							break;
 						}
 					}
-					
-					float ratio = countsame/countedges;
 				}
 				else
 				{
@@ -233,80 +277,48 @@ public class gmlReader extends AbstractGraphReader {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		/*
-		Node node=null;
-		int numNodes = 20;
-		 Class type;
-		graph.addColumn("name",String.class);
-		graph.addColumn("value",String.class);
-		for (int i = 0; i < numNodes; i++)
-			{
-				node=graph.addNode();
-				//System.out.println(node.canSetString("name") +" " + node.getColumnCount() +" "+ node.isValid());
-				node.setString("name", "abcd");
-				//node.set(1,"l");
-			}
-		    	
-		// Create random connections
-		Random rand = new Random();	
-		for(int i = 0; i < numNodes; i++)
-		{
-		  int first = rand.nextInt(numNodes);
-		  int second = rand.nextInt(numNodes);
-		  graph.addEdge(first, second);
-		}
-	*/
-		/*int[] palette = {ColorLib.rgb(200, 0, 0), ColorLib.rgb(0,0, 200),ColorLib.rgb(0,200, 0)}; 
-		DataColorAction fill = new DataColorAction("graph.nodes", "value",Constants.NOMINAL,VisualItem.FILLCOLOR,palette);
-		ColorAction edges = new ColorAction("graph.edges", VisualItem.STROKECOLOR, ColorLib.gray(200));
-		       
-		ActionList color = new ActionList();
-		color.add(fill);
-		color.add(edges);
-		       
-		ActionList layout = new ActionList();   	
-		layout.add(new RandomLayout("graph"));   	
-		layout.add(new RepaintAction()); 
-		
-		Visualization vis = new Visualization();
-		vis.add("graph", graph);
-		// once actions have been created (see above)
-		// they are added to the Visualization.
-		vis.putAction("color", color);
-		vis.putAction("layout", layout);
-		
-		ShapeRenderer r = new ShapeRenderer();
-		vis.setRendererFactory(new DefaultRendererFactory(r));
-		
-		Display d = new Display(vis);
-		d.setSize(720, 500); 
-		
-		d.addControlListener(new DragControl());
-		d.addControlListener(new PanControl());
-		d.addControlListener(new ZoomControl());
-		d.addControlListener(new mycontrol());
-		           	
-		JFrame frame = new JFrame("prefuse example");   	
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		    	
-		frame.add(d);    	
-		frame.pack();              	
-		frame.setVisible(true);
-		    	
-		vis.run("color");
-		vis.run("layout");
-		*/
+		ratio = (float)countsame/countedges;
+		System.out.println("ratio= " +ratio);
+		System.out.println("nl= " +edge_nl +"nc= " +edge_nc +"lc= " +edge_lc +"countedges= " +countedges +"countsame= " +countsame);
 		return graph;
 	}
 
 
+	public Graph randomGraphGen(Graph graph,int[] rarr)
+	{		  
+		Graph randGraph= new Graph();
+		Random rand = new Random();	
+		int numnodes=graph.getNodeCount();
+		int numedges=graph.getEdgeCount();
+		int countsame =0;
+		float ratio=0;
+		randGraph=graph;
+		randGraph.getEdgeTable().clear();		
+		System.out.println(" coutn "+graph.getEdgeCount());
+		for(int i1 = 0; i1 < numedges; i1++)
+		{
+		  int first = rand.nextInt(numnodes);
+		  int second = rand.nextInt(numnodes);
+		  if(first!=second)
+		  graph.addEdge(first, second);
+		  else i1--;
+		  if(graph.getNode(first).get("value").equals(graph.getNode(second).get("value")))
+			countsame++;	
+		}
+		ratio=(float)countsame/numedges;
+		System.out.println(" randomratio= "+ratio);
+		/*ratio=ratio*1000;
+		ratio=ratio-320;
+		if(ratio>0)
+		rarr[(int) ratio]++;*/
+		return randGraph;
+	}
 	public static int gotoNextline(InputStream arg0)
 	{
 		int intread=0;
 		try {
-			while((intread=arg0.read())!=10){}
-			while((intread=arg0.read())==32){}
+			while((intread=arg0.read())!=10){if(intread==-1) break;}
+			while((intread=arg0.read())==32){if(intread==-1) break;}
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
